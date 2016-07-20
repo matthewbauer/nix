@@ -1,0 +1,5 @@
+language: nix
+script: nix-build release.nix
+os:
+  - linux
+  - osx
