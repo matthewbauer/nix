@@ -1,5 +1,8 @@
 language: nix
 script: nix-build release.nix
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      script: nix-build release.nix -A build.x86_64-linux
+    - os: osx
+      script: nix-build release.nix -A build.x86_64-darwin
