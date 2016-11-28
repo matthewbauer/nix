@@ -98,6 +98,11 @@ if [ "$(id -u)" -eq 0 ]; then
         systemctl enable nix-daemon
         systemctl start nix-daemon
     fi
+
+    if [ -d /etc/paths.d ]; then
+        echo "Adding /etc/paths.d/nix."
+        echo $dest/var/nix/profiles/default/bin > /etc/paths.d/nix
+    fi
 fi
 
 # Install an SSL certificate bundle.
