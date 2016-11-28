@@ -334,19 +334,35 @@ let
     releaseTools.debBuild {
       name = "nix-deb";
       src = jobs.tarball;
+
       diskImage = (diskImageFun vmTools.diskImageFuns)
         { extraPackages =
-            [ "libsqlite3-dev" "libbz2-dev" "libcurl-dev" "libcurl4-openssl-dev" "libssl-dev" "liblzma-dev" "libseccomp-dev" ]
+            [ "build-essential" "debhelper" "mount"
+              "libsqlite3-dev" "libbz2-dev" "libcurl-dev" "libcurl4-openssl-dev" "libssl-dev" "liblzma-dev" "libseccomp-dev" ]
             ++ extraPackages; };
       memSize = 1024;
       meta.schedulingPriority = 50;
-      postInstall = "make installcheck";
-      configureFlags = "--sysconfdir=/etc";
+
+      configurePhase = "true";
+
+      buildPhase = ''
+        dpkg-buildpackage -us -uc
+      '';
+
+      installPhase = ''
+        mkdir -p $out/debs
+        cp -r ../*.deb $out/debs
+      '';
+
+      postDebInstall = ''
+        make installcheck
+      '';
+
       debRequires =
         [ "curl" "libsqlite3-0" "libbz2-1.0" "bzip2" "xz-utils" "libssl1.0.0" "liblzma5" "libcurl3" "libseccomp2" ]
         ++ extraDebPackages;
       debMaintainer = "Eelco Dolstra <eelco.dolstra@logicblox.com>";
-      doInstallCheck = true;
+
       #enableParallelBuilding = true;
     };
 
