@@ -2,6 +2,11 @@ if [ -n "$HOME" ] && [ -n "$USER" ]; then
     __savedpath="$PATH"
     export PATH=@coreutils@
 
+    # Use the nix daemon for multi-user builds
+    if ! [ -w @localstatedir@/nix/db ]; then
+        export NIX_REMOTE=daemon
+    fi
+
     # Set up the per-user profile.
     # This part should be kept in sync with nixpkgs:nixos/modules/programs/shell.nix
 
