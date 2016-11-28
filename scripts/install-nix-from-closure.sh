@@ -173,21 +173,38 @@ fi
 added=
 if [ -z "$NIX_INSTALLER_NO_MODIFY_PROFILE" ]; then
 
-    # Make the shell source nix.sh during login.
-    p=$HOME/.nix-profile/etc/profile.d/nix.sh
+    if [ "$(id -u)" -eq 0 ]; then
 
-    for i in .bash_profile .bash_login .profile; do
-        fn="$HOME/$i"
-        if [ -w "$fn" ]; then
-            if ! grep -q "$p" "$fn"; then
-                echo "modifying $fn..." >&2
-                echo "if [ -e $p ]; then . $p; fi # added by Nix installer" >> $fn
+        # Make the shell source nix.sh during login.
+        p=/nix/var/profiles/default/etc/profile.d/nix.sh
+
+        for i in bashrc profile; do
+            fn="/etc/$i"
+            if [ -w "$fn" ]; then
+                if ! grep -q "$p" "$fn"; then
+                    echo "modifying $fn..." >&2
+                    echo "if [ -e $p ]; then . $p; fi # added by Nix installer" >> $fn
+                fi
+                added=1
+                break
             fi
-            added=1
-            break
-        fi
-    done
+        done
+    else
+        # Make the shell source nix.sh during login.
+        p=$HOME/.nix-profile/etc/profile.d/nix.sh
 
+        for i in .bash_profile .bash_login .profile; do
+            fn="$HOME/$i"
+            if [ -w "$fn" ]; then
+                if ! grep -q "$p" "$fn"; then
+                    echo "modifying $fn..." >&2
+                    echo "if [ -e $p ]; then . $p; fi # added by Nix installer" >> $fn
+                fi
+                added=1
+                break
+            fi
+        done
+    fi
 fi
 
 if [ -z "$added" ]; then
