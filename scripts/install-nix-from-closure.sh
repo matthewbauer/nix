@@ -81,6 +81,25 @@ if ! $nix/bin/nix-env -i "$nix"; then
     exit 1
 fi
 
+if [ "$(id -u)" -eq 0 ]; then
+    if [ -d /Library/LaunchDaemons ]; then
+        echo "Installing org.nixos.nix-daemon.plist in /Library/LaunchDaemons."
+        ln -fs $nix/Library/LaunchDaemons/org.nixos.nix-daemon.plist /Library/LaunchDaemons/
+
+        echo "Starting nix-daemon."
+        launchctl load -F /Library/LaunchDaemons/org.nixos.nix-daemon.plist
+        launchctl start org.nixos.nix-daemon
+    elif [ -d /etc/systemd/system ]; then
+        echo "Installing in /etc/systemd/system."
+        ln -fs $nix/lib/nix-daemon.service /etc/systemd/system
+        ln -fs $nix/lib/nix-daemon.socket /etc/systemd/system
+
+        echo "Starting nix-daemon."
+        systemctl enable nix-daemon
+        systemctl start nix-daemon
+    fi
+fi
+
 # Install an SSL certificate bundle.
 if [ -z "$NIX_SSL_CERT_FILE" -o ! -f "$NIX_SSL_CERT_FILE" ]; then
     $nix/bin/nix-env -i "$cacert"
