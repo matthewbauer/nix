@@ -18,17 +18,68 @@ if [ -z "$USER" ]; then
 fi
 
 if [ "$(id -u)" -eq 0 ]; then
-    printf '\e[1;31mwarning: installing Nix as root is not supported by this script!\e[0m\n'
-fi
+    echo "performing a multi-user installation of Nix..." >&2
 
-echo "performing a single-user installation of Nix..." >&2
+    group=nixbld
 
-if ! [ -e $dest ]; then
-    cmd="mkdir -m 0755 $dest && chown $USER $dest"
-    echo "directory $dest does not exist; creating it by running '$cmd' using sudo" >&2
-    if ! sudo sh -c "$cmd"; then
-        echo "$0: please manually run ‘$cmd’ as root to create $dest" >&2
+    echo "trying to add users"
+
+    if command -v dseditgroup >/dev/null 2>&1; then
+        echo "Creating $group group"
+        dseditgroup -q -o create $group
+
+        gid=$(dscl -q . read /Groups/$group | awk '($1 == "PrimaryGroupID:") {print $2 }')
+
+        echo "Create $group users"
+        for i in $(seq 1 10); do
+            user=/Users/$group$i
+            uid="$((30000 + $i))"
+
+            dscl -q . create $user
+            dscl -q . create $user RealName "Nix build user $i"
+            dscl -q . create $user PrimaryGroupID $gid
+            dscl -q . create $user UserShell /usr/bin/false
+            dscl -q . create $user NFSHomeDirectory /var/empty
+            dscl -q . create $user UniqueID $uid
+
+            dscl . -append /Groups/$group GroupMembership $group$i
+
+            dseditgroup -q -o edit -a $group$i -t user $group
+        done
+
+    elif command -v groupadd >/dev/null 2>&1; then
+
+        groupadd -r $group
+        for n in $(seq 1 10); do
+            useradd -c "Nix build user $n" \
+                    -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" \
+                    $group$n
+        done
+
+    else
+
+        echo "Cannot setup nixbld group/users." >&2
         exit 1
+
+    fi
+
+    mkdir -m 0755 $dest
+    chown -R root:$group $dest
+
+    mkdir -p /etc/nix
+    echo "Adding build-users-group to /etc/nix/nix.conf."
+    echo "build-users-group = $group # added by installer" >> /etc/nix/nix.conf
+
+else
+    echo "performing a single-user installation of Nix..." >&2
+
+    if ! [ -e $dest ]; then
+        cmd="mkdir -m 0755 $dest && chown $USER $dest"
+        echo "directory $dest does not exist; creating it by running '$cmd' using sudo" >&2
+        if ! sudo sh -c "$cmd"; then
+            echo "$0: please manually run ‘$cmd’ as root to create $dest" >&2
+            exit 1
+        fi
     fi
 fi
 
