@@ -37,6 +37,12 @@ if ! [ -w $dest ]; then
     exit 1
 fi
 
+if command -v chflags >/dev/null 2>&1; then
+    echo "Hiding $dest directory."
+    # just automatically set hidden
+    chflags hidden $dest
+fi
+
 mkdir -p $dest/store
 
 echo -n "copying Nix to $dest/store..." >&2
