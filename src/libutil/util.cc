@@ -15,10 +15,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-#ifdef __APPLE__
-#include <sys/syscall.h>
-#endif
-
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
@@ -895,16 +891,7 @@ void killUser(uid_t uid)
             throw SysError("setting uid");
 
         while (true) {
-#ifdef __APPLE__
-            /* OSX's kill syscall takes a third parameter that, among
-               other things, determines if kill(-1, signo) affects the
-               calling process. In the OSX libc, it's set to true,
-               which means "follow POSIX", which we don't want here
-                 */
-            if (syscall(SYS_kill, -1, SIGKILL, false) == 0) break;
-#else
             if (kill(-1, SIGKILL) == 0) break;
-#endif
             if (errno == ESRCH) break; /* no more processes */
             if (errno != EINTR)
                 throw SysError(format("cannot kill processes for uid ‘%1%’") % uid);
@@ -914,8 +901,10 @@ void killUser(uid_t uid)
     }, options);
 
     int status = pid.wait(true);
+    #ifndef __APPLE__
     if (status != 0)
         throw Error(format("cannot kill processes for uid ‘%1%’: %2%") % uid % statusToString(status));
+    #endif
 
     /* !!! We should really do some check to make sure that there are
        no processes left running under `uid', but there is no portable
