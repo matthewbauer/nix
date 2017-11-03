@@ -817,6 +817,7 @@ void killUser(uid_t uid)
         err = sysctl((int *)name, 4, NULL, &length, NULL, 0);
         if (err)
             throw SysError("calling sysctl to get size");
+        length /= sizeof(struct kinfo_proc);
 
         vector<struct kinfo_proc> proc_list(length);
 
