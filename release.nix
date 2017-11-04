@@ -319,7 +319,15 @@ let
       memSize = 2047;
       meta.schedulingPriority = 50;
 
-      postRPMInstall = "cd /tmp/rpmout/BUILD/nix-* && make installcheck";
+      postRPMInstall = ''
+        cd /tmp/rpmout/BUILD/nix-*
+        make installcheck
+        useradd alice
+        mount -t tmpfs none /nix/store
+        nix-daemon &
+        su -c 'bash -l -c "nix-build --option use-substitutes false --no-out-link tests/dependencies.nix"' alice
+        umount /nix/store
+      '';
     };
 
 
@@ -356,14 +364,17 @@ let
 
       postDebInstall = ''
         make installcheck
+        useradd alice
+        mount -t tmpfs none /nix/store
+        nix-daemon &
+        su -c 'bash -l -c "nix-build --option use-substitutes false --no-out-link tests/dependencies.nix"' alice
+        umount /nix/store
       '';
 
       debRequires =
         [ "curl" "libsqlite3-0" "libbz2-1.0" "bzip2" "xz-utils" "libssl1.0.0" "liblzma5" "libcurl3" "libseccomp2" ]
         ++ extraDebPackages;
       debMaintainer = "Eelco Dolstra <eelco.dolstra@logicblox.com>";
-
-      #enableParallelBuilding = true;
     };
 
 
