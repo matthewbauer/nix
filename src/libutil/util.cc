@@ -801,48 +801,53 @@ void killUser(uid_t uid)
 
     // Borrowed from https://stackoverflow.com/a/7733928
     int err = 0;
-    size_t length = 0, newlength = 0;
 
-    // XXX: Should this be KERN_PROC_RUID? EUID vs. real UID
-    static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_UID, static_cast<int>(uid) };
+    static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL };
 
+    int count = 0;
     int tries = 100;
     bool done = false;
 
     while (!done) {
         tries--;
 
+        size_t length = 0;
         // First call with NULL to get number of processes. Yeah yeah TOCTOU is fun, but we check
         // that it hasn't changed later and keep going until it's 0
-        err = sysctl((int *)name, 4, NULL, &length, NULL, 0);
+        err = sysctl((int *)name, 3, NULL, &length, NULL, 0);
         if (err)
             throw SysError("calling sysctl to get size");
-        length /= sizeof(struct kinfo_proc);
 
-        vector<struct kinfo_proc> proc_list(length);
+        struct kinfo_proc *proc_list = (struct kinfo_proc*) malloc(length);
 
-        newlength = length;
-        err = sysctl((int *)name, 4, (void *)proc_list.data(), &newlength, NULL, 0);
+        err = sysctl((int *)name, 3, proc_list, &length, NULL, 0);
         if (err)
             throw SysError("calling sysctl to get process list");
 
         // @grahamc points out https://utcc.utoronto.ca/~cks/space/blog/unix/ProcessKillingTrick
-        for (auto proc : proc_list) {
-            kill(proc.kp_proc.p_pid, SIGSTOP);
+        for (int i = 0; i < length / sizeof(struct kinfo_proc); i++) {
+            if (proc_list[i].kp_proc.p_pid == 0) continue;
+            if (proc_list[i].kp_eproc.e_ucred.cr_uid != uid) continue;
+            count++;
+            kill(proc_list[i].kp_proc.pp_id, SIGSTOP);
         }
 
-        for (auto proc : proc_list) {
-            kill(proc.kp_proc.p_pid, SIGKILL);
+        for (int i = 0; i < length / sizeof(struct kinfo_proc); i++) {
+            if (proc_list[i].kp_proc.p_pid == 0) continue;
+            if (proc_list[i].kp_eproc.e_ucred.cr_uid != uid) continue;
+            kill(proc_list[i].kp_proc.p_pid, SIGKILL);
         }
 
-        if (newlength == 0)
+        free(proc_list);
+
+        if (count == 0)
             break;
 
         if (tries <= 0)
             break;
     }
 
-    if (newlength != 0)
+    if (count != 0)
         throw SysError("ran out of tries but there were processes left. I've created a monster!!!");
 #else
     /* The system call kill(-1, sig) sends the signal `sig' to all
