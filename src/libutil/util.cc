@@ -806,9 +806,8 @@ void killUser(uid_t uid)
 
     int count = 0;
     int tries = 100;
-    bool done = false;
 
-    while (!done) {
+    while (tries > 0) {
         tries--;
 
         size_t length = 0;
@@ -824,17 +823,10 @@ void killUser(uid_t uid)
         if (err)
             throw SysError("calling sysctl to get process list");
 
-        // @grahamc points out https://utcc.utoronto.ca/~cks/space/blog/unix/ProcessKillingTrick
         for (int i = 0; i < length / sizeof(struct kinfo_proc); i++) {
             if (proc_list[i].kp_proc.p_pid == 0) continue;
             if (proc_list[i].kp_eproc.e_ucred.cr_uid != uid) continue;
             count++;
-            kill(proc_list[i].kp_proc.pp_id, SIGSTOP);
-        }
-
-        for (int i = 0; i < length / sizeof(struct kinfo_proc); i++) {
-            if (proc_list[i].kp_proc.p_pid == 0) continue;
-            if (proc_list[i].kp_eproc.e_ucred.cr_uid != uid) continue;
             kill(proc_list[i].kp_proc.p_pid, SIGKILL);
         }
 
@@ -842,12 +834,9 @@ void killUser(uid_t uid)
 
         if (count == 0)
             break;
-
-        if (tries <= 0)
-            break;
     }
 
-    if (count != 0)
+    if (errno != EPERM && count != 0)
         throw SysError("ran out of tries but there were processes left. I've created a monster!!!");
 #else
     /* The system call kill(-1, sig) sends the signal `sig' to all
