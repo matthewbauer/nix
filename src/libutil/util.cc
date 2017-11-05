@@ -836,8 +836,8 @@ void killUser(uid_t uid)
             break;
     }
 
-    if (errno != EPERM && count != 0)
-        throw SysError("ran out of tries but there were processes left. I've created a monster!!!");
+    //if (errno != EPERM && count != 0)
+    //    throw SysError("ran out of tries but there were processes left. I've created a monster!!!");
 #else
     /* The system call kill(-1, sig) sends the signal `sig' to all
        users to which the current process can send signals.  So we
