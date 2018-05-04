@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 set -eu
 set -o pipefail
@@ -12,39 +12,39 @@ set -o pipefail
 #
 # however tracking which bits came from which would be impossible.
 
-readonly ESC='\033[0m'
-readonly BOLD='\033[38;1m'
-readonly BLUE='\033[38;34m'
-readonly BLUE_UL='\033[38;4;34m'
-readonly GREEN='\033[38;32m'
-readonly GREEN_UL='\033[38;4;32m'
-readonly RED='\033[38;31m'
-readonly RED_UL='\033[38;4;31m'
-readonly YELLOW='\033[38;33m'
-readonly YELLOW_UL='\033[38;4;33m'
+ESC='\033[0m'
+BOLD='\033[38;1m'
+BLUE='\033[38;34m'
+BLUE_UL='\033[38;4;34m'
+GREEN='\033[38;32m'
+GREEN_UL='\033[38;4;32m'
+RED='\033[38;31m'
+RED_UL='\033[38;4;31m'
+YELLOW='\033[38;33m'
+YELLOW_UL='\033[38;4;33m'
 
-readonly NIX_USER_COUNT="32"
-readonly NIX_BUILD_GROUP_ID="30000"
-readonly NIX_BUILD_GROUP_NAME="nixbld"
-readonly NIX_FIRST_BUILD_UID="30001"
+NIX_USER_COUNT="32"
+NIX_BUILD_GROUP_ID="30000"
+NIX_BUILD_GROUP_NAME="nixbld"
+NIX_FIRST_BUILD_UID="30001"
 # Please don't change this. We don't support it, because the
 # default shell profile that comes with Nix doesn't support it.
-readonly NIX_ROOT="/nix"
+NIX_ROOT="/nix"
 
-readonly PROFILE_TARGETS=("/etc/bashrc" "/etc/profile.d/nix.sh" "/etc/zshrc")
-readonly PROFILE_BACKUP_SUFFIX=".backup-before-nix"
-readonly PROFILE_NIX_FILE="$NIX_ROOT/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
+PROFILE_TARGETS=("/etc/bashrc" "/etc/profile.d/nix.sh" "/etc/zshrc")
+PROFILE_BACKUP_SUFFIX=".backup-before-nix"
+PROFILE_NIX_FILE="$NIX_ROOT/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 
-readonly NIX_INSTALLED_NIX="@nix@"
-readonly NIX_INSTALLED_CACERT="@cacert@"
-readonly EXTRACTED_NIX_PATH="$(dirname "$0")"
+NIX_INSTALLED_NIX="@nix@"
+NIX_INSTALLED_CACERT="@cacert@"
+EXTRACTED_NIX_PATH="$(dirname "$0")"
 
-readonly ROOT_HOME=$(echo ~root)
+ROOT_HOME=$(echo ~root)
 
 if [ -t 0 ]; then
-    readonly IS_HEADLESS='no'
+    IS_HEADLESS='no'
 else
-    readonly IS_HEADLESS='yes'
+    IS_HEADLESS='yes'
 fi
 
 headless() {
@@ -67,7 +67,7 @@ contactme() {
 
 uninstall_directions() {
     subheader "Uninstalling nix:"
-    local step=0
+    step=0
 
     if poly_service_installed_check; then
         step=$((step + 1))
@@ -167,7 +167,6 @@ failure() {
     _textout "$RED" "$@"
     echo ""
     _textout "$RED" "$(contactme)"
-    trap finish_cleanup EXIT
     exit 1
 }
 
@@ -223,14 +222,7 @@ _sudo() {
 }
 
 
-readonly SCRATCH=$(mktemp -d -t tmp.XXXXXXXXXX)
-function finish_cleanup {
-    rm -rf "$SCRATCH"
-}
-
-function finish_fail {
-    finish_cleanup
-
+finish_fail() {
     failure <<EOF
 Jeeze, something went wrong. If you can take all the output and open
 an issue, we'd love to fix the problem so nobody else has this issue.
@@ -240,9 +232,7 @@ EOF
 }
 trap finish_fail EXIT
 
-function finish_success {
-    finish_cleanup
-
+finish_success() {
     ok "Alright! We're done!"
     cat <<EOF
 
@@ -260,141 +250,8 @@ $(contactme)
 EOF
 }
 
-
-validate_starting_assumptions() {
-    poly_validate_assumptions
-
-    if [ $EUID -eq 0 ]; then
-        failure <<EOF
-Please do not run this script with root privileges. We will call sudo
-when we need to.
-EOF
-    fi
-
-    if type nix-env 2> /dev/null >&2; then
-        failure <<EOF
-Nix already appears to be installed, and this tool assumes it is
-_not_ yet installed.
-
-$(uninstall_directions)
-EOF
-    fi
-
-    if [ "${NIX_REMOTE:-}" != "" ]; then
-        failure <<EOF
-For some reason, \$NIX_REMOTE is set. It really should not be set
-before this installer runs, and it hints that Nix is currently
-installed. Please delete the old Nix installation and start again.
-
-Note: You might need to close your shell window and open a new shell
-to clear the variable.
-EOF
-    fi
-
-    if echo "${SSL_CERT_FILE:-}" | grep -qE "(nix/var/nix|nix-profile)"; then
-        failure <<EOF
-It looks like \$SSL_CERT_FILE is set to a path that used to be part of
-the old Nix installation. Please unset that variable and try again:
-
-  $ unset SSL_CERT_FILE
-
-EOF
-    fi
-
-    for file in ~/.bash_profile ~/.bash_login ~/.profile ~/.zshenv ~/.zprofile ~/.zshrc ~/.zlogin; do
-        if [ -f "$file" ]; then
-            if grep -l "^[^#].*.nix-profile" "$file"; then
-                failure <<EOF
-I found a reference to a ".nix-profile" in $file.
-This has a high chance of breaking a new nix installation. It was most
-likely put there by a previous Nix installer.
-
-Please remove this reference and try running this again. You should
-also look for similar references in:
-
- - ~/.bash_profile
- - ~/.bash_login
- - ~/.profile
-
-or other shell init files that you may have.
-
-$(uninstall_directions)
-EOF
-            fi
-        fi
-    done
-
-    if [ -d /nix ]; then
-        failure <<EOF
-There are some relics of a previous installation of Nix at /nix, and
-this scripts assumes Nix is _not_ yet installed. Please delete the old
-Nix installation and start again.
-
-$(uninstall_directions)
-EOF
-    fi
-
-    if [ -d /etc/nix ]; then
-        failure <<EOF
-There are some relics of a previous installation of Nix at /etc/nix, and
-this scripts assumes Nix is _not_ yet installed. Please delete the old
-Nix installation and start again.
-
-$(uninstall_directions)
-EOF
-    fi
-
-    for profile_target in "${PROFILE_TARGETS[@]}"; do
-        if [ -e "$profile_target$PROFILE_BACKUP_SUFFIX" ]; then
-        failure <<EOF
-When this script runs, it backs up the current $profile_target to
-$profile_target$PROFILE_BACKUP_SUFFIX. This backup file already exists, though.
-
-Please follow these instructions to clean up the old backup file:
-
-1. Copy $profile_target and $profile_target$PROFILE_BACKUP_SUFFIX to another place, just
-in case.
-
-2. Take care to make sure that $profile_target$PROFILE_BACKUP_SUFFIX doesn't look like
-it has anything nix-related in it. If it does, something is probably
-quite wrong. Please open an issue or get in touch immediately.
-
-3. Take care to make sure that $profile_target doesn't look like it has
-anything nix-related in it. If it does, and $profile_target _did not_,
-run:
-
-  $ /usr/bin/sudo /bin/mv $profile_target$PROFILE_BACKUP_SUFFIX $profile_target
-
-and try again.
-EOF
-        fi
-
-        if [ -e "$profile_target" ] && grep -qi "nix" "$profile_target"; then
-            failure <<EOF
-It looks like $profile_target already has some Nix configuration in
-there. There should be no reason to run this again. If you're having
-trouble, please open an issue.
-EOF
-        fi
-    done
-
-    danger_paths=("$ROOT_HOME/.nix-defexpr" "$ROOT_HOME/.nix-channels" "$ROOT_HOME/.nix-profile")
-    for danger_path in "${danger_paths[@]}"; do
-        if _sudo "making sure that $danger_path doesn't exist" \
-           test -e "$danger_path"; then
-            failure <<EOF
-I found a file at $danger_path, which is a relic of a previous
-installation. You must first delete this file before continuing.
-
-$(uninstall_directions)
-EOF
-        fi
-    done
-}
-
 setup_report() {
     header "Nix config report"
-    row "        Temp Dir" "$SCRATCH"
     row "        Nix Root" "$NIX_ROOT"
     row "     Build Users" "$NIX_USER_COUNT"
     row "  Build Group ID" "$NIX_BUILD_GROUP_ID"
@@ -413,8 +270,6 @@ setup_report() {
 }
 
 create_build_group() {
-    local primary_group_id
-
     task "Setting up the build group $NIX_BUILD_GROUP_NAME"
     if ! poly_group_exists "$NIX_BUILD_GROUP_NAME"; then
         poly_create_build_group
@@ -438,10 +293,6 @@ EOF
 }
 
 create_build_user_for_core() {
-    local coreid
-    local username
-    local uid
-
     coreid="$1"
     username=$(nix_user_for_core "$coreid")
     uid=$(nix_uid_for_core "$coreid")
@@ -533,7 +384,7 @@ create_directories() {
           mkdir -pv -m 1775 /nix/store
 
     _sudo "to make the basic directory structure of Nix (part 4)" \
-          chgrp "$NIX_BUILD_GROUP_NAME" /nix/store
+          chgrp -R "$NIX_BUILD_GROUP_NAME" /nix/store
 
     _sudo "to set up the root user's profile (part 1)" \
           mkdir -pv -m 0755 /nix/var/nix/profiles/per-user/root
@@ -546,9 +397,9 @@ create_directories() {
 }
 
 place_channel_configuration() {
-    echo "https://nixos.org/channels/nixpkgs-unstable nixpkgs" > "$SCRATCH/.nix-channels"
-    _sudo "to set up the default system channel (part 1)" \
-          install -m 0664 "$SCRATCH/.nix-channels" "$ROOT_HOME/.nix-channels"
+    echo "https://nixos.org/channels/nixpkgs-unstable nixpkgs" | \
+          _sudo "to set up the default system channel (part 1)" \
+            tee "$ROOT_HOME/.nix-channels"
 }
 
 welcome_to_nix() {
@@ -559,21 +410,18 @@ welcome_to_nix() {
 This installation tool will set up your computer with the Nix package
 manager. This will happen in a few stages:
 
-1. Make sure your computer doesn't already have Nix. If it does, I
-   will show you instructions on how to clean up your old one.
-
-2. Show you what we are going to install and where. Then we will ask
+1. Show you what we are going to install and where. Then we will ask
    if you are ready to continue.
 
-3. Create the system users and groups that the Nix daemon uses to run
+2. Create the system users and groups that the Nix daemon uses to run
    builds.
 
-4. Perform the basic installation of the Nix files daemon.
+3. Perform the basic installation of the Nix files daemon.
 
-5. Configure your shell to import special Nix Profile files, so you
+4. Configure your shell to import special Nix Profile files, so you
    can use Nix.
 
-6. Start the Nix daemon.
+5. Start the Nix daemon.
 
 EOF
 
@@ -582,8 +430,6 @@ EOF
 
 We will:
 
- - make sure your computer doesn't already have Nix files
-   (if it does, I  will tell you how to clean them up.)
  - create local users (see the list above for the users we'll make)
  - create a local group ($NIX_BUILD_GROUP_NAME)
  - install Nix in to $NIX_ROOT
@@ -663,7 +509,7 @@ install_from_extracted_nix() {
         cd "$EXTRACTED_NIX_PATH"
 
         _sudo "to copy the basic Nix files to the new store at $NIX_ROOT/store" \
-              rsync -rlpt ./store/* "$NIX_ROOT/store/"
+              cp -Rp store "$NIX_ROOT/store"
 
         if [ -d "$NIX_INSTALLED_NIX" ]; then
             echo "      Alright! We have our first nix at $NIX_INSTALLED_NIX"
@@ -675,11 +521,10 @@ EOF
         fi
 
         _sudo "to initialize the Nix Database" \
-              $NIX_INSTALLED_NIX/bin/nix-store --init
+              "$NIX_INSTALLED_NIX/bin/nix-store" --init
 
-        cat ./.reginfo \
-            | _sudo "to load data for the first time in to the Nix Database" \
-                   "$NIX_INSTALLED_NIX/bin/nix-store" --load-db
+        _sudo "to load data for the first time in to the Nix Database" \
+              "$NIX_INSTALLED_NIX/bin/nix-store" --load-db < ./.reginfo
 
         echo "      Just finished getting the nix database ready."
     )
@@ -736,15 +581,13 @@ setup_default_profile() {
 
 
 place_nix_configuration() {
-    cat <<EOF > "$SCRATCH/nix.conf"
+    cat | _sudo "to place the default nix daemon configuration (part 2)" tee /etc/nix/nix.conf <<EOF
 build-users-group = $NIX_BUILD_GROUP_NAME
 
 max-jobs = $NIX_USER_COUNT
 cores = 1
 sandbox = false
 EOF
-    _sudo "to place the default nix daemon configuration (part 2)" \
-          install -m 0664 "$SCRATCH/nix.conf" /etc/nix/nix.conf
 }
 
 main() {
@@ -761,16 +604,11 @@ main() {
     welcome_to_nix
     chat_about_sudo
 
-    if [ "${ALLOW_PREEXISTING_INSTALLATION:-}" = "" ]; then
-        validate_starting_assumptions
-    fi
-
     setup_report
 
     if ! ui_confirm "Ready to continue?"; then
         ok "Alright, no changes have been made :)"
         contactme
-        trap finish_cleanup EXIT
         exit 1
     fi
 
