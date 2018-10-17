@@ -214,6 +214,10 @@ struct DIRDeleter
 typedef std::unique_ptr<DIR, DIRDeleter> AutoCloseDir;
 
 
+#ifndef SIGKILL
+#define SIGKILL SIGTERM
+#endif
+
 class Pid
 {
     pid_t pid = -1;
