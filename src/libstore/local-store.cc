@@ -99,8 +99,16 @@ LocalStore::LocalStore(const Params & params)
         }
     }
 
+    bool nixIgnoreSymlinkStore = getEnv("NIX_IGNORE_SYMLINK_STORE") == "1";
+
+#if __APPLE__
+    /* When in SIP mode, we cannot write to the root directory even as
+     * root. Allow symlink stores in this case. */
+    nixIgnoreSymlinkStore = true;
+#endif
+
     /* Ensure that the store and its parents are not symlinks. */
-    if (getEnv("NIX_IGNORE_SYMLINK_STORE") != "1") {
+    if (!nixIgnoreSymlinkStore) {
         Path path = realStoreDir;
         struct stat st;
         while (path != "/") {
