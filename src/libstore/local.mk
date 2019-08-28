@@ -13,6 +13,8 @@ ifneq ($(OS), FreeBSD)
  libstore_LDFLAGS += -ldl
 endif
 
+libstore_WHOLE_ARCHIVE = 1
+
 libstore_FILES = sandbox-defaults.sb sandbox-minimal.sb sandbox-network.sb
 
 $(foreach file,$(libstore_FILES),$(eval $(call install-data-in,$(d)/$(file),$(datadir)/nix/sandbox)))
