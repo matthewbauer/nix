@@ -88,6 +88,7 @@ void LocalBinaryCacheStore::upsertFile(const std::string & path,
     atomicWrite(binaryCacheDir + "/" + path, data);
 }
 
+__attribute__((used))
 static RegisterStoreImplementation regStore([](
     const std::string & uri, const Store::Params & params)
     -> std::shared_ptr<Store>

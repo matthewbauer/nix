@@ -86,6 +86,7 @@ ref<RemoteStore::Connection> SSHStore::openConnection()
     return conn;
 }
 
+__attribute__((used))
 static RegisterStoreImplementation regStore([](
     const std::string & uri, const Store::Params & params)
     -> std::shared_ptr<Store>

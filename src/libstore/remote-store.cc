@@ -798,6 +798,7 @@ std::exception_ptr RemoteStore::Connection::processStderr(Sink * sink, Source * 
 
 static std::string uriScheme = "unix://";
 
+__attribute__((used))
 static RegisterStoreImplementation regStore([](
     const std::string & uri, const Store::Params & params)
     -> std::shared_ptr<Store>

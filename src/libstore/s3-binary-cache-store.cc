@@ -415,6 +415,7 @@ struct S3BinaryCacheStoreImpl : public S3BinaryCacheStore
 
 };
 
+__attribute__((used))
 static RegisterStoreImplementation regStore([](
     const std::string & uri, const Store::Params & params)
     -> std::shared_ptr<Store>

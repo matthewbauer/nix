@@ -50,11 +50,6 @@ endif
 #   target andwill not be listed in the make help output. This is
 #   useful for libraries built solely for testing, for example.
 #
-# - $(1)_WHOLE_ARCHIVE: if defined, the whole archive of the static
-#   library will be used. This is necessary when using global
-#   constructors such as setting up a RegisterStoreImplementation.
-#   Only applies when BUILD_SHARED_LIBS=0.
-#
 # - BUILD_SHARED_LIBS: if equal to ‘1’, a dynamic library will be
 #   built, otherwise a static library.
 define build-library
@@ -132,32 +127,7 @@ define build-library
     $$($(1)_PATH): $$($(1)_OBJS) | $$(_d)/
 	$(trace-ar) $(AR) crs $$@ $$?
 
-    # Special care is needed to support C++ global initializers, used
-    # in RegisterStoreImplementation. The .init section needs to be in
-    # the linked executable for it find the registered stores. On
-    # Linux systems systems, wrap the linked object archive with whole
-    # archive flags. Note that --whole-archive is only supported with
-    # the bfd, gold, and lld linkers. The macOS ld64 linker has a
-    # -force_load that seems to work similarly, but takes one argument
-    # instead of a group of arguments.
-
-    ifdef $(1)_WHOLE_ARCHIVE
-      ifeq ($(OS), Linux)
-        $(1)_LDFLAGS_USE += -Wl,--whole-archive
-      else ifeq ($(OS), Darwin)
-        $(1)_LDFLAGS_USE += -Wl,-force_load
-      endif
-    endif
-
-    $(1)_LDFLAGS_USE += $$($(1)_PATH)
-
-    ifdef $(1)_WHOLE_ARCHIVE
-      ifeq ($(OS), Linux)
-        $(1)_LDFLAGS_USE += -Wl,--no-whole-archive
-      endif
-    endif
-
-    $(1)_LDFLAGS_USE += $$($(1)_LDFLAGS)
+    $(1)_LDFLAGS_USE += $$($(1)_PATH) $$($(1)_LDFLAGS)
 
     $(1)_INSTALL_PATH := $$(libdir)/$$($(1)_NAME).a
 
