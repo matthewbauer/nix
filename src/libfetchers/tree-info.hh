@@ -12,6 +12,10 @@ namespace nix::fetchers {
 struct TreeInfo
 {
     Hash narHash;
+
+    std::optional<Hash> contentHash;
+    std::optional<FileIngestionMethod> ingestionMethod;
+
     std::optional<uint64_t> revCount;
     std::optional<time_t> lastModified;
 
@@ -19,6 +23,8 @@ struct TreeInfo
     {
         return
             narHash == other.narHash
+            && contentHash == other.contentHash
+            && ingestionMethod == other.ingestionMethod
             && revCount == other.revCount
             && lastModified == other.lastModified;
     }
