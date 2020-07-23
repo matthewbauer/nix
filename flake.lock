@@ -1,26 +1,44 @@
 {
   "nodes": {
+    "make-package": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1595530838,
+        "narHash": "sha256-foXJ2G1dLfG5iUbYZbiR59oSflc4AhjJBBGrwx+3LLQ=",
+        "owner": "matthewbauer",
+        "repo": "make-package.nix",
+        "rev": "6a9f2db4991915b82ad8e0c4197bb51bfe0ea227",
+        "type": "github"
+      },
+      "original": {
+        "owner": "matthewbauer",
+        "repo": "make-package.nix",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1591633336,
-        "narHash": "sha256-oVXv4xAnDJB03LvZGbC72vSVlIbbJr8tpjEW5o/Fdek=",
+        "lastModified": 1595323341,
+        "narHash": "sha256-0i1ud8Jcm30nUUHZ1I7NyTxbXRg/r4YtQWGWTpyar0Y=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "70717a337f7ae4e486ba71a500367cad697e5f09",
+        "rev": "55079328c219fb53f3120a34fdba3a80d3be601b",
         "type": "github"
       },
       "original": {
         "id": "nixpkgs",
-        "ref": "nixos-20.03-small",
+        "ref": "nixpkgs-unstable",
         "type": "indirect"
       }
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "make-package": "make-package"
       }
     }
   },
   "root": "root",
-  "version": 6
+  "version": 7
 }
