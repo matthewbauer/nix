@@ -8,8 +8,7 @@
       pname = "nix";
       version = "2.4pre20200622_334e26b";
 
-      # outputs = [ "out" "dev" "man" "doc" ];
-      separateDebugInfo = false;
+      outputs = [ "out" "dev" "man" "doc" ];
 
       depsBuildHost = [
         "pkgconfig"
