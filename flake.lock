@@ -5,11 +5,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1595530838,
-        "narHash": "sha256-foXJ2G1dLfG5iUbYZbiR59oSflc4AhjJBBGrwx+3LLQ=",
+        "lastModified": 1595567453,
+        "narHash": "sha256-qAm6TnYYnvAndrqTlgoV1lch962YcmGzdl3WNLPFtcY=",
         "owner": "matthewbauer",
         "repo": "make-package.nix",
-        "rev": "6a9f2db4991915b82ad8e0c4197bb51bfe0ea227",
+        "rev": "ada94954b67a6ae9ae1148a2dcd364e75b1e5164",
         "type": "github"
       },
       "original": {
