@@ -51,6 +51,8 @@
 
       makeFlags = [ "profiledir=${placeholder "out"}/etc/profile.d" ];
 
+      doCheck = false;
+
       installFlags = [ "sysconfdir=${placeholder "out"}/etc" ];
     };
   };
