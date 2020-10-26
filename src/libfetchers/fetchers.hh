@@ -39,6 +39,8 @@ public:
 
     ParsedURL toURL() const;
 
+    std::string toURLString(const std::map<std::string, std::string> & extraQuery = {}) const;
+
     std::string to_string() const;
 
     Attrs toAttrs() const;
@@ -84,6 +86,9 @@ public:
 
 struct InputScheme
 {
+    virtual ~InputScheme()
+    { }
+
     virtual std::optional<Input> inputFromURL(const ParsedURL & url) = 0;
 
     virtual std::optional<Input> inputFromAttrs(const Attrs & attrs) = 0;
