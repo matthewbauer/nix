@@ -1,7 +1,7 @@
 {
   description = "The purely functional package manager";
 
-  inputs.nixpkgs.url = "nixpkgs/nixos-20.03-small";
+  inputs.nixpkgs.url = "nixpkgs/nixos-20.09-small";
   inputs.lowdown-src = { url = "github:kristapsdz/lowdown"; flake = false; };
 
   outputs = { self, nixpkgs, lowdown-src }:
@@ -16,7 +16,8 @@
 
       officialRelease = false;
 
-      linuxSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
+      linux64BitSystems = [ "x86_64-linux" "aarch64-linux" ];
+      linuxSystems = linux64BitSystems ++ [ "i686-linux" ];
       systems = linuxSystems ++ [ "x86_64-darwin" ];
 
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
@@ -228,7 +229,7 @@
         # Binary package for various platforms.
         build = nixpkgs.lib.genAttrs systems (system: self.packages.${system}.nix);
 
-        buildStatic = nixpkgs.lib.genAttrs linuxSystems (system: self.packages.${system}.nix-static);
+        buildStatic = nixpkgs.lib.genAttrs linux64BitSystems (system: self.packages.${system}.nix-static);
 
         # Perl bindings for various platforms.
         perlBindings = nixpkgs.lib.genAttrs systems (system: self.packages.${system}.nix.perl-bindings);
@@ -250,6 +251,7 @@
             }
             ''
               cp ${installerClosureInfo}/registration $TMPDIR/reginfo
+              cp ${./scripts/create-darwin-volume.sh} $TMPDIR/create-darwin-volume.sh
               substitute ${./scripts/install-nix-from-closure.sh} $TMPDIR/install \
                 --subst-var-by nix ${nix} \
                 --subst-var-by cacert ${cacert}
@@ -268,6 +270,7 @@
                 # SC1090: Don't worry about not being able to find
                 #         $nix/etc/profile.d/nix.sh
                 shellcheck --exclude SC1090 $TMPDIR/install
+                shellcheck $TMPDIR/create-darwin-volume.sh
                 shellcheck $TMPDIR/install-darwin-multi-user.sh
                 shellcheck $TMPDIR/install-systemd-multi-user.sh
 
@@ -283,6 +286,7 @@
               fi
 
               chmod +x $TMPDIR/install
+              chmod +x $TMPDIR/create-darwin-volume.sh
               chmod +x $TMPDIR/install-darwin-multi-user.sh
               chmod +x $TMPDIR/install-systemd-multi-user.sh
               chmod +x $TMPDIR/install-multi-user
@@ -295,11 +299,15 @@
                 --absolute-names \
                 --hard-dereference \
                 --transform "s,$TMPDIR/install,$dir/install," \
+                --transform "s,$TMPDIR/create-darwin-volume.sh,$dir/create-darwin-volume.sh," \
                 --transform "s,$TMPDIR/reginfo,$dir/.reginfo," \
                 --transform "s,$NIX_STORE,$dir/store,S" \
-                $TMPDIR/install $TMPDIR/install-darwin-multi-user.sh \
+                $TMPDIR/install \
+                $TMPDIR/create-darwin-volume.sh \
+                $TMPDIR/install-darwin-multi-user.sh \
                 $TMPDIR/install-systemd-multi-user.sh \
-                $TMPDIR/install-multi-user $TMPDIR/reginfo \
+                $TMPDIR/install-multi-user \
+                $TMPDIR/reginfo \
                 $(cat ${installerClosureInfo}/store-paths)
             '');
 
@@ -440,13 +448,11 @@
       checks = forAllSystems (system: {
         binaryTarball = self.hydraJobs.binaryTarball.${system};
         perlBindings = self.hydraJobs.perlBindings.${system};
-      } // nixpkgs.lib.optionalAttrs (builtins.elem system linuxSystems) {
-        buildStatic = self.hydraJobs.buildStatic.${system};
       });
 
       packages = forAllSystems (system: {
         inherit (nixpkgsFor.${system}) nix;
-      } // nixpkgs.lib.optionalAttrs (builtins.elem system linuxSystems) {
+      } // nixpkgs.lib.optionalAttrs (builtins.elem system linux64BitSystems) {
         nix-static = let
           nixpkgs = nixpkgsFor.${system}.pkgsStatic;
         in with commonDeps nixpkgs; nixpkgs.stdenv.mkDerivation {

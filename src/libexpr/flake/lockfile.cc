@@ -34,7 +34,8 @@ LockedNode::LockedNode(const nlohmann::json & json)
     , isFlake(json.find("flake") != json.end() ? (bool) json["flake"] : true)
 {
     if (!lockedRef.input.isImmutable())
-        throw Error("lockfile contains mutable lock '%s'", attrsToJson(lockedRef.input.toAttrs()));
+        throw Error("lockfile contains mutable lock '%s'",
+            fetchers::attrsToJSON(lockedRef.input.toAttrs()));
 }
 
 StorePath LockedNode::computeStorePath(Store & store) const
@@ -110,7 +111,7 @@ LockFile::LockFile(const nlohmann::json & json, const Path & path)
     // a bit since we don't need to worry about cycles.
 }
 
-nlohmann::json LockFile::toJson() const
+nlohmann::json LockFile::toJSON() const
 {
     nlohmann::json nodes;
     std::unordered_map<std::shared_ptr<const Node>, std::string> nodeKeys;
@@ -154,8 +155,8 @@ nlohmann::json LockFile::toJson() const
         }
 
         if (auto lockedNode = std::dynamic_pointer_cast<const LockedNode>(node)) {
-            n["original"] = fetchers::attrsToJson(lockedNode->originalRef.toAttrs());
-            n["locked"] = fetchers::attrsToJson(lockedNode->lockedRef.toAttrs());
+            n["original"] = fetchers::attrsToJSON(lockedNode->originalRef.toAttrs());
+            n["locked"] = fetchers::attrsToJSON(lockedNode->lockedRef.toAttrs());
             if (!lockedNode->isFlake) n["flake"] = false;
         }
 
@@ -174,7 +175,7 @@ nlohmann::json LockFile::toJson() const
 
 std::string LockFile::to_string() const
 {
-    return toJson().dump(2);
+    return toJSON().dump(2);
 }
 
 LockFile LockFile::read(const Path & path)
@@ -185,7 +186,7 @@ LockFile LockFile::read(const Path & path)
 
 std::ostream & operator <<(std::ostream & stream, const LockFile & lockFile)
 {
-    stream << lockFile.toJson().dump(2);
+    stream << lockFile.toJSON().dump(2);
     return stream;
 }
 
@@ -223,7 +224,7 @@ bool LockFile::isImmutable() const
 bool LockFile::operator ==(const LockFile & other) const
 {
     // FIXME: slow
-    return toJson() == other.toJson();
+    return toJSON() == other.toJSON();
 }
 
 InputPath parseInputPath(std::string_view s)

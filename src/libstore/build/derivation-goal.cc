@@ -493,7 +493,8 @@ void DerivationGoal::inputsRealised()
     if (useDerivation) {
         auto & fullDrv = *dynamic_cast<Derivation *>(drv.get());
 
-        if (!fullDrv.inputDrvs.empty() && fullDrv.type() == DerivationType::CAFloating) {
+        if ((!fullDrv.inputDrvs.empty() &&
+             fullDrv.type() == DerivationType::CAFloating) || fullDrv.type() == DerivationType::DeferredInputAddressed) {
             /* We are be able to resolve this derivation based on the
                now-known results of dependencies. If so, we become a stub goal
                aliasing that resolved derivation goal */
@@ -1331,13 +1332,9 @@ void DerivationGoal::startBuilder()
 
         /* Allow a user-configurable set of directories from the
            host file system. */
-        PathSet dirs = settings.sandboxPaths;
-        PathSet dirs2 = settings.extraSandboxPaths;
-        dirs.insert(dirs2.begin(), dirs2.end());
-
         dirsInChroot.clear();
 
-        for (auto i : dirs) {
+        for (auto i : settings.sandboxPaths.get()) {
             if (i.empty()) continue;
             bool optional = false;
             if (i[i.size() - 1] == '?') {
@@ -3156,7 +3153,7 @@ void DerivationGoal::registerOutputs()
                        valid. */
                     worker.hashMismatch = true;
                     delayedException = std::make_exception_ptr(
-                        BuildError("hash mismatch in fixed-output derivation '%s':\n  wanted: %s\n  got:    %s",
+                        BuildError("hash mismatch in fixed-output derivation '%s':\n  specified: %s\n     got:    %s",
                             worker.store.printStorePath(drvPath),
                             wanted.to_string(SRI, true),
                             got.to_string(SRI, true)));
@@ -3165,6 +3162,15 @@ void DerivationGoal::registerOutputs()
             },
             [&](DerivationOutputCAFloating dof) {
                 return newInfoFromCA(dof);
+            },
+                [&](DerivationOutputDeferred) {
+                // No derivation should reach that point without having been
+                // rewritten first
+                assert(false);
+                // Ugly, but the compiler insists on having this return a value
+                // of type `ValidPathInfo` despite the `assert(false)`, so
+                // let's provide it
+                return *(ValidPathInfo*)0;
             },
         }, output.output);
 
