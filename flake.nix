@@ -230,7 +230,7 @@
         # Binary package for various platforms.
         build = nixpkgs.lib.genAttrs systems (system: self.packages.${system}.nix);
 
-        buildStatic = nixpkgs.lib.genAttrs linux64BitSystems (system: self.packages.${system}.nix-static);
+        buildStatic = nixpkgs.lib.genAttrs (linux64BitSystems ++ ["x86_64-darwin"]) (system: self.packages.${system}.nix-static);
 
         # Perl bindings for various platforms.
         perlBindings = nixpkgs.lib.genAttrs systems (system: self.packages.${system}.nix.perl-bindings);
@@ -438,7 +438,7 @@
 
       packages = forAllSystems (system: {
         inherit (nixpkgsFor.${system}) nix;
-      } // nixpkgs.lib.optionalAttrs (builtins.elem system linux64BitSystems) {
+      } // nixpkgs.lib.optionalAttrs (builtins.elem system (linux64BitSystems ++ ["x86_64-darwin"])) {
         nix-static = let
           nixpkgs = nixpkgsFor.${system}.pkgsStatic;
         in with commonDeps nixpkgs; nixpkgs.stdenv.mkDerivation {
