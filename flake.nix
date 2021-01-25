@@ -1,7 +1,7 @@
 {
   description = "The purely functional package manager";
 
-  inputs.nixpkgs.url = "github:matthewbauer/nixpkgs?ref=static-nix-darwin";
+  inputs.nixpkgs.url = "github:matthewbauer/nixpkgs?ref=stdenv-is-static";
   inputs.lowdown-src = { url = "github:kristapsdz/lowdown"; flake = false; };
 
   outputs = { self, nixpkgs, lowdown-src }:
