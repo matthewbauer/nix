@@ -254,7 +254,13 @@ struct ConnectionHandle
     {
         if (!daemonException && std::uncaught_exceptions()) {
             handle.markBad();
-            debug("closing daemon connection because of an exception");
+            try {
+               std::rethrow_exception(std::current_exception());
+            } catch (const std::exception& e) {
+                debug("closing daemon connection because of an exception: %s", e.what());
+            } catch (...) {
+                debug("closing daemon connection because of an unknown exception");
+            }
         }
     }
 
