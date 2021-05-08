@@ -566,9 +566,9 @@ ref<const ValidPathInfo> RemoteStore::addCAToStore(
                       or I/O error. */
                     if (e.errNo == EPIPE)
                         try {
-                            conn.processStderr();
+                            conn.processStderr(nullptr, nullptr, false);
                         } catch (EndOfFile & e) { }
-                    throw e;
+                    throw;
                 }
 
             }
