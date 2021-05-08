@@ -345,6 +345,10 @@ void _interrupted();
 
 void inline checkInterrupt()
 {
+    if (_isInterrupted)
+        debug("_isInterrupted");
+    if (interruptCheck && interruptCheck())
+        debug("interruptCheck && interruptCheck()");
     if (_isInterrupted || (interruptCheck && interruptCheck()))
         _interrupted();
 }

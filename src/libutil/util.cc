@@ -1579,6 +1579,8 @@ static void signalHandlerThread(sigset_t set)
 
 void triggerInterrupt()
 {
+    debug("triggerInterrupt");
+
     _isInterrupted = true;
 
     {
