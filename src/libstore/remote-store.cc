@@ -15,7 +15,7 @@
 #include "filetransfer.hh"
 #include <nlohmann/json.hpp>
 
-#include <stdio>
+#include <iostream>
 
 namespace nix {
 
