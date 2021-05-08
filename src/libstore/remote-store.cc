@@ -15,6 +15,8 @@
 #include "filetransfer.hh"
 #include <nlohmann/json.hpp>
 
+#include <stdio>
+
 namespace nix {
 
 namespace worker_proto {
