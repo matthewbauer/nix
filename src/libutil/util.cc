@@ -1216,6 +1216,7 @@ void closeOnExec(int fd)
 
 
 bool _isInterrupted = false;
+int _interruptSignal;
 
 static thread_local bool interruptThrown = false;
 thread_local std::function<bool()> interruptCheck;
@@ -1232,7 +1233,10 @@ void _interrupted()
        kills the program! */
     if (!interruptThrown && !std::uncaught_exceptions()) {
         interruptThrown = true;
-        throw Interrupted("interrupted by the user");
+        if (interruptSignal == POLLHUP)
+            throw Interrupted("interrupted by broken pipe");
+        else
+            throw Interrupted("interrupted by the user");
     }
 }
 
@@ -1569,7 +1573,7 @@ static void signalHandlerThread(sigset_t set)
         sigwait(&set, &signal);
 
         if (signal == SIGINT || signal == SIGTERM || signal == SIGHUP)
-            triggerInterrupt();
+            triggerInterrupt(signal);
 
         else if (signal == SIGWINCH) {
             updateWindowSize();
@@ -1577,11 +1581,10 @@ static void signalHandlerThread(sigset_t set)
     }
 }
 
-void triggerInterrupt()
+void triggerInterrupt(int signal)
 {
-    debug("triggerInterrupt");
-
     _isInterrupted = true;
+    _interruptSignal = signal;
 
     {
         auto interruptCallbacks(_interruptCallbacks.lock());

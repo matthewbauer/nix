@@ -264,9 +264,14 @@ struct ConnectionHandle
     {
         auto ex = handle->processStderr(sink, source, flush);
         if (ex) {
-            debug("got daemon exception");
+            std::cerr << "got daemon exception" << std::endl;
             daemonException = true;
-            std::rethrow_exception(ex);
+            try {
+                std::rethrow_exception(ex);
+            } catch (std::exception & e) {
+                std::cerr << "error: " << e.what() << std::endl;
+                throw;
+            }
         }
     }
 
@@ -566,7 +571,7 @@ ref<const ValidPathInfo> RemoteStore::addCAToStore(
                     /* Daemon closed while we were sending the path. Probably OOM
                       or I/O error. */
                     if (e.errNo == EPIPE) {
-                        debug("got broken pipe");
+                        std::cerr << "got broken pipe" << std::endl;
                         try {
                             conn.processStderr();
                         } catch (EndOfFile & e) { }

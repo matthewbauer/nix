@@ -345,10 +345,6 @@ void _interrupted();
 
 void inline checkInterrupt()
 {
-    if (_isInterrupted)
-        debug("_isInterrupted");
-    if (interruptCheck && interruptCheck())
-        debug("interruptCheck && interruptCheck()");
     if (_isInterrupted || (interruptCheck && interruptCheck()))
         _interrupted();
 }
@@ -536,7 +532,7 @@ struct InterruptCallback
 std::unique_ptr<InterruptCallback> createInterruptCallback(
     std::function<void()> callback);
 
-void triggerInterrupt();
+void triggerInterrupt(int signal);
 
 /* A RAII class that causes the current thread to receive SIGUSR1 when
    the signal handler thread receives SIGINT. That is, this allows

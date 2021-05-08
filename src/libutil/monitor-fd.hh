@@ -41,7 +41,7 @@ public:
                */
               if (count == 0) continue;
               assert(fds[0].revents & POLLHUP);
-              triggerInterrupt();
+              triggerInterrupt(POLLHUP);
               break;
             }
         });
