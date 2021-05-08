@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <poll.h>
 
 #ifdef __APPLE__
 #include <sys/syscall.h>
@@ -1233,7 +1234,7 @@ void _interrupted()
        kills the program! */
     if (!interruptThrown && !std::uncaught_exceptions()) {
         interruptThrown = true;
-        if (interruptSignal == POLLHUP)
+        if (_interruptSignal == POLLHUP)
             throw Interrupted("interrupted by broken pipe");
         else
             throw Interrupted("interrupted by the user");
